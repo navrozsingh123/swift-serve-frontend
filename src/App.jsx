@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import Home from './screens/Home'
-import Login from './screens/login'
+import Login from './screens/Login'
 import SignUp from './screens/Signup'
 import MyOrder from './screens/MyOrder'
 import '../node_modules/bootstrap-dark-5/dist/css/bootstrap-dark.min.css'
