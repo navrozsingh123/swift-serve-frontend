@@ -1,0 +1,26 @@
+:root {
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  /* font-family: 'NHaasGroteskDSPro-65Md' !important; */
+  @font-face {
+    font-family: 'NHaasGroteskDSPro-65Md';
+    src: url('/fonts/NHaasGroteskDSPro-65Md.woff2') format('woff2'),
+        url('/fonts/NHaasGroteskDSPro-65Md.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+  }
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
