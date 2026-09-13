@@ -17,7 +17,7 @@ export default function Login() {
         setErrors([])
 
         try {
-            const response = await fetch('http://localhost:5001/api/loginuser', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/loginuser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

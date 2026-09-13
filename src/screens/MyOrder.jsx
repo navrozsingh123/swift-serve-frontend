@@ -12,7 +12,7 @@ export default function MyOrder() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("http://localhost:5001/api/myOrderData", {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/myOrderData`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

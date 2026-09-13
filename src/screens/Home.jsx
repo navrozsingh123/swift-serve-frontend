@@ -15,7 +15,7 @@ export default function Home() {
         try {
             setLoading(true);
             setError(false);
-            let response = await fetch("http://localhost:5001/api/displayData");
+            let response = await fetch(`${import.meta.env.VITE_API_URL}/api/displayData`);
             if (!response.ok) throw new Error("Failed to fetch");
             response = await response.json();
             setFoodCat(response.foodCategory);
