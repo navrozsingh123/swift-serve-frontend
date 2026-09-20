@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
+import { apiUrl, authHeaders } from '../api';
 
 export default function MyOrder() {
 
@@ -8,36 +9,45 @@ export default function MyOrder() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const fetchMyOrder = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/myOrderData`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    email: localStorage.getItem('userEmail')
-                })
-            });
-
-            if (!res.ok) {
-                throw new Error(`Server responded with status ${res.status}`);
-            }
-
-            const response = await res.json();
-            setOrderData(response);
-        } catch (err) {
-            console.error("Failed to fetch orders:", err);
-            setError("Could not load your orders. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    }
-
     useEffect(() => {
+        let cancelled = false;
+
+        const fetchMyOrder = async () => {
+            try {
+                // The server reads the account from the token; it no longer
+                // accepts an email chosen by the client.
+                const res = await fetch(apiUrl('/api/myOrderData'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...authHeaders()
+                    }
+                });
+
+                const response = await res.json();
+
+                if (cancelled) return;
+
+                if (res.status === 401) {
+                    setError("Please log in to see your orders.");
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error(response.error || `Server responded with status ${res.status}`);
+                }
+
+                setOrderData(response);
+            } catch (err) {
+                if (cancelled) return;
+                console.error("Failed to fetch orders:", err);
+                setError("Could not load your orders. Please try again.");
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
         fetchMyOrder();
+        return () => { cancelled = true; };
     }, []);
 
     if (loading) {

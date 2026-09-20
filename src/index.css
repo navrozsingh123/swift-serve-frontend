@@ -6,18 +6,9 @@
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
-@font-face {
-  font-family: 'NHaasGroteskDSPro-65Md';
-  src: url('/fonts/NHaasGroteskDSPro-65Md.woff2') format('woff2'),
-      url('/fonts/NHaasGroteskDSPro-65Md.woff') format('woff');
-  font-weight: 500;
-  font-style: normal;
-}
-
 body {
   margin: 0;
   font-family: var(--sans);
-  /* font-family: 'NHaasGroteskDSPro-65Md' !important; */
 }
 
 #root {

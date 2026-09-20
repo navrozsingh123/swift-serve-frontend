@@ -18,4 +18,10 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    // Context modules intentionally export their provider alongside the hooks
+    // that read it; Fast Refresh's one-export-per-file rule does not apply.
+    files: ['src/components/ContextReducer.jsx', 'src/components/CartUIContext.jsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 ])

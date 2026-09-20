@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useCart, useDispatchCart } from './ContextReducer';
 
 export default function Card(props) {

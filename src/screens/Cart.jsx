@@ -1,98 +1,126 @@
-import React from 'react'
+import { useState } from 'react'
 import { useCart, useDispatchCart } from '../components/ContextReducer'
+import { apiUrl, authHeaders } from '../api'
 import trash from "../trash.svg"
 
 export default function Cart() {
-    let data = useCart();
-    let dispatch = useDispatchCart();
-    if (data.length == 0) {
-        return (
-            <div>
-                <div className='m-5 w-100 text-center fs-3'>The cart is Empty!</div>
-            </div>
-        )
-    }
+    const data = useCart();
+    const dispatch = useDispatchCart();
+    // Checkout feedback lives here rather than in console.error, and survives
+    // the cart emptying itself on a successful order.
+    const [status, setStatus] = useState(null);
+    const [placing, setPlacing] = useState(false);
+
     const handleCheckOut = async () => {
-        let userEmail = localStorage.getItem('userEmail');
+        if (!localStorage.getItem('authToken')) {
+            setStatus({ type: 'error', message: 'Please log in to place your order.' });
+            return;
+        }
+
+        setPlacing(true);
+        setStatus(null);
+
         try {
-            let response = await fetch(`${import.meta.env.VITE_API_URL}/api/orderData`, {
+            // The account comes from the token, so no email is sent.
+            const response = await fetch(apiUrl('/api/orderData'), {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...authHeaders()
                 },
                 body: JSON.stringify({
                     order_data: data,
-                    email: userEmail,
                     order_date: new Date().toDateString()
                 })
             });
 
             const result = await response.json();
-            // console.log("checkout result:", result);
 
             if (response.ok && result.success) {
                 dispatch({ type: "DROP" });
+                setStatus({ type: 'success', message: 'Order placed. Find it under My Orders.' });
             } else {
-                console.error("Checkout failed:", result);
+                setStatus({
+                    type: 'error',
+                    message: result.error || 'Checkout failed. Please try again.'
+                });
             }
         } catch (error) {
             console.error("Checkout request failed:", error);
+            setStatus({ type: 'error', message: 'Could not reach the server. Please try again.' });
+        } finally {
+            setPlacing(false);
         }
     }
-    let totalPrice = data.reduce((total, food) => total + (food.unitPrice * food.qty), 0);
+
+    const totalPrice = data.reduce((total, food) => total + (food.unitPrice * food.qty), 0);
     return (
         <div>
             <div className="container m-auto mt-5 cart-table-wrap" style={{ paddingBottom: "100px" }}>
-                <table className="table table-hover cart-glass-table">
-                    <thead>
-                        <tr className="text-white">
-                            <th scope="col">#</th>
-                            <th scope="col">Name</th>
-                            <th scope="col">Quantity</th>
-                            <th scope="col">Option</th>
-                            <th scope="col">Amount</th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="text-white">
-                        {data.map((food, index) => (
-                            <tr key={index} className="glass-row">
-                                <th scope="row">{index + 1}</th>
-                                <td>{food.name}</td>
-                                <td>
-                                    <div className="qty-stepper">
-                                        <button
-                                            type="button"
-                                            className="qty-btn"
-                                            onClick={() => dispatch({ type: "DECREMENT", index: index })}
-                                        >
-                                            −
-                                        </button>
-                                        <span className="qty-value">{food.qty}</span>
-                                        <button
-                                            type="button"
-                                            className="qty-btn"
-                                            onClick={() => dispatch({ type: "INCREMENT", index: index })}
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </td>
-                                <td>{food.size}</td>
-                                <td>₹{food.unitPrice * food.qty}</td>
-                                <td>
-                                    <button type="button" className="btn p-0" onClick={() => dispatch({ type: "REMOVE", index: index })}>
-                                        <img src={trash} alt="Delete" width="20" height="20" />
-                                    </button>
-                                </td>
+                {status && (
+                    <div className={`checkout-status ${status.type}`}>{status.message}</div>
+                )}
+
+                {data.length === 0 ? (
+                    <div className='m-5 w-100 text-center fs-3'>The cart is Empty!</div>
+                ) : (
+                    <>
+                    <table className="table table-hover cart-glass-table">
+                        <thead>
+                            <tr className="text-white">
+                                <th scope="col">#</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Quantity</th>
+                                <th scope="col">Option</th>
+                                <th scope="col">Amount</th>
+                                <th scope="col"></th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div className="glass-summary">
-                    <h1>Total Price: ₹{totalPrice}</h1>
-                </div>
-                <div><button className="checkout-btn" onClick={handleCheckOut}>Checkout</button></div>
+                        </thead>
+                        <tbody className="text-white">
+                            {data.map((food, index) => (
+                                <tr key={index} className="glass-row">
+                                    <th scope="row">{index + 1}</th>
+                                    <td>{food.name}</td>
+                                    <td>
+                                        <div className="qty-stepper">
+                                            <button
+                                                type="button"
+                                                className="qty-btn"
+                                                onClick={() => dispatch({ type: "DECREMENT", index: index })}
+                                            >
+                                                −
+                                            </button>
+                                            <span className="qty-value">{food.qty}</span>
+                                            <button
+                                                type="button"
+                                                className="qty-btn"
+                                                onClick={() => dispatch({ type: "INCREMENT", index: index })}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>{food.size}</td>
+                                    <td>₹{food.unitPrice * food.qty}</td>
+                                    <td>
+                                        <button type="button" className="btn p-0" onClick={() => dispatch({ type: "REMOVE", index: index })}>
+                                            <img src={trash} alt="Delete" width="20" height="20" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div className="glass-summary">
+                        <h1>Total Price: ₹{totalPrice}</h1>
+                    </div>
+                    <div>
+                        <button className="checkout-btn" onClick={handleCheckOut} disabled={placing}>
+                            {placing ? 'Placing order...' : 'Checkout'}
+                        </button>
+                    </div>
+                    </>
+                )}
             </div>
 
             <style>{`
@@ -170,8 +198,30 @@ export default function Cart() {
                 box-shadow: 0 6px 20px rgba(255, 107, 53, 0.35);
                 transition: transform 0.15s ease;
             }
-            .checkout-btn:hover {
+            .checkout-btn:hover:not(:disabled) {
                 transform: translateY(-1px);
+            }
+            .checkout-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .checkout-status {
+                margin-top: 12px;
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 13.5px;
+                font-weight: 600;
+            }
+            .checkout-status.success {
+                background: rgba(70, 200, 120, 0.12);
+                border: 1px solid rgba(70, 200, 120, 0.35);
+                color: #7ee2a8;
+            }
+            .checkout-status.error {
+                background: rgba(255, 80, 80, 0.12);
+                border: 1px solid rgba(255, 80, 80, 0.35);
+                color: #ff8a8a;
             }
         `}</style>
         </div>

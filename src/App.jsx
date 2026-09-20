@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import Home from './screens/Home'
 import Login from './screens/Login'
 import SignUp from './screens/Signup'

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import Card from '../components/Card'
+import { apiUrl } from '../api'
 
 export default function Home() {
 
@@ -11,32 +12,38 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            setError(false);
-            let response = await fetch(`${import.meta.env.VITE_API_URL}/api/displayData`);
-            if (!response.ok) throw new Error("Failed to fetch");
-            response = await response.json();
-            setFoodCat(response.foodCategory);
-            setFoodItem(response.foodItems);
-        } catch (err) {
-            console.error("Failed to load menu:", err);
-            setError(true);
-        } finally {
-            setLoading(false);
-        }
-    }
-
     useEffect(() => {
+        // StrictMode mounts twice, so ignore the result of a run whose effect
+        // has already been cleaned up rather than setting state after unmount.
+        let cancelled = false;
+
+        const loadData = async () => {
+            try {
+                const response = await fetch(apiUrl('/api/displayData'));
+                if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+                const data = await response.json();
+                if (cancelled) return;
+                setFoodCat(Array.isArray(data.foodCategory) ? data.foodCategory : []);
+                setFoodItem(Array.isArray(data.foodItems) ? data.foodItems : []);
+            } catch (err) {
+                if (cancelled) return;
+                console.error("Failed to load menu:", err);
+                setError(true);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
         loadData();
+        return () => { cancelled = true; };
     }, []);
 
     // Check if any category has matching items at all
     const hasAnyResults = foodCat.some((data) =>
         foodItem.some((item) =>
             item.CategoryName === data.CategoryName &&
-            item.name.toLowerCase().includes(search.toLowerCase())
+            item.name?.toLowerCase().includes(search.toLowerCase()) &&
+            item.options?.[0]
         )
     );
 
@@ -122,7 +129,8 @@ export default function Home() {
                     ? foodCat.map((data) => {
                         const filteredItems = foodItem.filter((item) =>
                             item.CategoryName === data.CategoryName &&
-                            item.name.toLowerCase().includes(search.toLowerCase())
+                            item.name?.toLowerCase().includes(search.toLowerCase()) &&
+                            item.options?.[0]
                         );
 
                         if (filteredItems.length === 0) return null;

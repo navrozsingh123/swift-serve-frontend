@@ -1,26 +1,36 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Badge from 'react-bootstrap/Badge';
-import { useCart } from '../components/ContextReducer'
+import { useCart, useDispatchCart } from '../components/ContextReducer'
 import { useCartUI } from '../components/CartUIContext'
 
 export default function Navbar() {
-    const [authToken, setAuthToken] = useState(localStorage.getItem("authToken"))
     const [menuOpen, setMenuOpen] = useState(false)
     const cartData = useCart()
     const cartCount = cartData.reduce((sum, item) => sum + item.qty, 0)
     const location = useLocation()
     const navigate = useNavigate()
     const { openCart } = useCartUI()
+    const dispatch = useDispatchCart()
 
-    useEffect(() => {
-        setAuthToken(localStorage.getItem("authToken"))
+    // Read during render instead of syncing into state from an effect, so the
+    // navbar can never show a stale logged-in/logged-out state for one frame.
+    const authToken = localStorage.getItem("authToken")
+
+    // Close the mobile menu on navigation, using the "adjust state during
+    // render" pattern rather than an effect.
+    const [lastPath, setLastPath] = useState(location.pathname)
+    if (lastPath !== location.pathname) {
+        setLastPath(location.pathname)
         setMenuOpen(false)
-    }, [location])
+    }
 
     const handleLogout = () => {
         localStorage.removeItem("authToken")
-        setAuthToken(null)
+        localStorage.removeItem("userEmail")
+        // The cart lives above the router, so without this the next person to
+        // log in on this browser would inherit the previous user's items.
+        dispatch({ type: "DROP" })
         navigate("/login")
     }
 

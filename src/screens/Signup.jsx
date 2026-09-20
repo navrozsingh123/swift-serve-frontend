@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { apiUrl } from '../api'
 
 export default function Signup() {
     const navigate = useNavigate()
@@ -17,7 +18,7 @@ export default function Signup() {
         setErrors([])
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/creatuser`, {
+            const response = await fetch(apiUrl('/api/createuser'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -25,16 +26,15 @@ export default function Signup() {
                 body: JSON.stringify(credentials)
             })
             const json = await response.json()
-            console.log(json)
 
             if (json.errors) {
                 setErrors(json.errors.map((err) => err.msg))
             } else if (json.success) {
                 navigate('/login')
             } else {
-                setErrors(['Something went wrong. Please try again.'])
+                setErrors([json.error || 'Something went wrong. Please try again.'])
             }
-        } catch (err) {
+        } catch {
             setErrors(['Could not reach the server. Please try again.'])
         } finally {
             setLoading(false)

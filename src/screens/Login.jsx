@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { apiUrl } from '../api'
 
 export default function Login() {
     const navigate = useNavigate()
@@ -17,7 +18,7 @@ export default function Login() {
         setErrors([])
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/loginuser`, {
+            const response = await fetch(apiUrl('/api/loginuser'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -25,21 +26,18 @@ export default function Login() {
                 body: JSON.stringify(credentials)
             })
             const json = await response.json()
-            console.log(json)
 
             if (json.errors) {
                 setErrors(json.errors.map((err) => err.msg))
-            } else if (json.success) {
-                if (json.authToken) {
-                    localStorage.setItem('userEmail', credentials.email);
-                    localStorage.setItem('authToken', json.authToken);
-                    console.log('Just set token, reading back:', localStorage.getItem('authToken'));
-                }
+            } else if (json.success && json.authToken) {
+                // Store the email the server resolved, so it matches the account exactly.
+                localStorage.setItem('userEmail', json.email || credentials.email)
+                localStorage.setItem('authToken', json.authToken)
                 navigate('/')
             } else {
-                setErrors(['Invalid email or password.'])
+                setErrors([json.error || 'Invalid email or password.'])
             }
-        } catch (err) {
+        } catch {
             setErrors(['Could not reach the server. Please try again.'])
         } finally {
             setLoading(false)
